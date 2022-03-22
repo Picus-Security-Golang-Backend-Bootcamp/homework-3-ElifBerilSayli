@@ -128,49 +128,62 @@ func main() {
 	}
 	// Checks whether user buy book and operate bought process
 	if args[1] == "buy" {
-		err := checkCommandSize(args)
-		if err != nil {
-			fmt.Printf("error running program: %s \n", err.Error())
-		} else {
-			ıd, err := strconv.Atoi(args[2])
-			if err != nil {
-				fmt.Printf("error running program: %s \n", err.Error())
-			} else {
-				err = checkIdValidError(ıd)
-				if err != nil {
-					fmt.Printf("error running program: %s \n", err.Error())
-				} else {
-					numberOfBooksToBuy, err := strconv.Atoi(args[3])
-					if err != nil {
-						fmt.Printf("error running program: %s \n", err.Error())
-					} else {
-						books := bookRepository.UpdateStockNumber(numberOfBooksToBuy, bookRepository.GetById(ıd))
-						fmt.Println(books)
-					}
-				}
-			}
+		numberOfBooksToBuy, ıd := checkBuy(args)
+		if numberOfBooksToBuy > 0 {
+			books := bookRepository.UpdateStockNumber(numberOfBooksToBuy, bookRepository.GetById(ıd))
+			fmt.Println(books)
 		}
 	}
 	// Checks whether user delete book and operate deletion process
 	if args[1] == "delete" {
-		deletionId, err := strconv.Atoi(args[2])
+		deletionId := checkDeletion(args)
+		if deletionId > 0 {
+			books := bookRepository.DeleteById(deletionId)
+			if books == nil {
+				fmt.Printf("Successful deletion !! \n")
+			} else {
+				fmt.Printf("Error in deletion !! \n")
+			}
+		}
+	}
+}
+func checkBuy(args []string) (int, int) {
+	err := checkCommandSize(args)
+	if err != nil {
+		fmt.Printf("error running program: %s \n", err.Error())
+	} else {
+		ıd, err := strconv.Atoi(args[2])
 		if err != nil {
 			fmt.Printf("error running program: %s \n", err.Error())
 		} else {
-			err = checkIdValidError(deletionId)
+			err = checkIdValidError(ıd)
 			if err != nil {
 				fmt.Printf("error running program: %s \n", err.Error())
 			} else {
-				books := bookRepository.DeleteById(deletionId)
-				if books == nil {
-					fmt.Printf("Successful deletion !! \n")
+				numberOfBooksToBuy, err := strconv.Atoi(args[3])
+				if err != nil {
+					fmt.Printf("error running program: %s \n", err.Error())
 				} else {
-					fmt.Printf("Error in deletion !! \n")
+					return numberOfBooksToBuy, ıd
 				}
 			}
 		}
-
 	}
+	return -1, -1
+}
+func checkDeletion(args []string) int {
+	deletionId, err := strconv.Atoi(args[2])
+	if err != nil {
+		fmt.Printf("error running program: %s \n", err.Error())
+	} else {
+		err = checkIdValidError(deletionId)
+		if err != nil {
+			fmt.Printf("error running program: %s \n", err.Error())
+		} else {
+			return deletionId
+		}
+	}
+	return -1
 }
 
 //func checkCommandSize checks arguments size for error handling.
