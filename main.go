@@ -12,17 +12,26 @@ import (
 
 	"strings"
 
-	"github.com/Picus-Security-Golang-Backend-Bootcamp/homework-3-ElifBerilSayli/bookLib"
+	"github.com/Picus-Security-Golang-Backend-Bootcamp/homework-3-ElifBerilSayli/bookRepo"
 	"github.com/Picus-Security-Golang-Backend-Bootcamp/homework-3-ElifBerilSayli/database"
 )
 
 // initialize of global variables
-var bookStructSlice = []bookLib.Book{}
+var bookStructSlice = []bookRepo.Book{}
+var authorStructSlice = []bookRepo.Author{}
+
 var bookSlice = []string{}
-var authSlice = []string{}
+var authNameSlice = []string{}
+var authBirthSlice = []string{}
+var stockCodeSlice = []string{}
+var ISBSlice = []int{}
+var pageNumber = []int{}
+var price = []int{}
+var stockNumber = []int{}
 
 var (
-	bookRepository *bookLib.BookRepository
+	bookRepository   *bookRepo.BookRepository
+	authorRepository *bookRepo.AuthorRepository
 )
 
 // Error handling
@@ -33,21 +42,26 @@ var ErrInvalidIdNumber = errors.New("ERROR: Book ıd not found")
 // Book related and database initializations operations
 func init() {
 	db := database.NewMySQLDB("root:Password123!@tcp(127.0.0.1:3306)/location?parseTime=True&loc=Local")
-	bookRepository = bookLib.NewBookRepository(db)
+	bookRepository = bookRepo.NewBookRepository(db)
+	authorRepository = bookRepo.NewAuthorRepository(db)
 	bookRepository.Migration()
+	authorRepository.Migration()
 	// Reading csv file to obtain author and book information
-	bookSlice, authSlice = readCsvOfBooks()
+	bookSlice, authNameSlice, authBirthSlice, stockCodeSlice, ISBSlice, pageNumber, price, stockNumber = readCsvOfBooks()
 	// Create new Book Structs
 	for i := range bookSlice {
-		n := bookLib.NewBook(strings.ToLower(bookSlice[i]), authSlice[i])
+		n := bookRepo.NewBook(strings.ToLower(bookSlice[i]), authNameSlice[i], stockCodeSlice[i], ISBSlice[i], pageNumber[i], price[i], stockNumber[i])
 		bookStructSlice = append(bookStructSlice, n)
+		a := bookRepo.NewAuthor(authNameSlice[i], authBirthSlice[i], strings.ToLower(bookSlice[i]))
+		authorStructSlice = append(authorStructSlice, a)
 	}
 	bookRepository.InsertData(bookStructSlice)
+	authorRepository.InsertData(authorStructSlice)
 
 }
 
 // Reading operations of csv and filling book and author arrays
-func readCsvOfBooks() ([]string, []string) {
+func readCsvOfBooks() ([]string, []string, []string, []string, []int, []int, []int, []int) {
 
 	f, err := os.Open("books.csv")
 	if err != nil {
@@ -64,12 +78,22 @@ func readCsvOfBooks() ([]string, []string) {
 		if err != nil {
 			log.Fatal(err)
 		}
+
 		bookSlice = append(bookSlice, rec[0])
-		authSlice = append(authSlice, rec[1])
-		//fmt.Printf("%s\n", bookSlice[cnt])
+		authNameSlice = append(authNameSlice, rec[1])
+		authBirthSlice = append(authBirthSlice, rec[2])
+		stockCodeSlice = append(stockCodeSlice, rec[3])
+		ISB, err := strconv.Atoi(rec[4])
+		ISBSlice = append(ISBSlice, ISB)
+		pageNum, err := strconv.Atoi(rec[5])
+		pageNumber = append(pageNumber, pageNum)
+		pricing, err := strconv.Atoi(rec[6])
+		price = append(price, pricing)
+		stockNum, err := strconv.Atoi(rec[7])
+		stockNumber = append(stockNumber, stockNum)
 		cnt = cnt + 1
 	}
-	return bookSlice, authSlice
+	return bookSlice, authNameSlice, authBirthSlice, stockCodeSlice, ISBSlice, pageNumber, price, stockNumber
 }
 
 func main() {
@@ -78,7 +102,7 @@ func main() {
 
 	// Arguments and operations to list search buy and delete books
 	if args[1] == "list" {
-		bookLib.List(bookStructSlice)
+		bookRepo.List(bookStructSlice)
 		return
 	}
 
@@ -99,7 +123,7 @@ func main() {
 			}
 			bookName := strings.Join(bookNameSlice, " ")
 			books := bookRepository.FindByBookOrAuthorName(strings.ToLower(bookName))
-			bookLib.List(books)
+			bookRepo.List(books)
 		}
 	}
 	// Checks whether user buy book and operate bought process
